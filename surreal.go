@@ -1,3 +1,11 @@
+// main is the entry point for the project
+// TODO:
+//   > Refactor render system to have global renderer with submit() and flush()
+//   > Basic lighting system
+//   > Camera models
+//   > General optimization
+//   > Check shader parameter setting is performant or not
+//   > Load obj files
 package main
 
 import (
@@ -11,6 +19,7 @@ import (
 
 	"github.com/go-gl/gl/v3.2-core/gl"
 
+	"github.com/Surreal/Math/math"
 	"github.com/Surreal/Systems/Core/core"
 	"github.com/Surreal/Systems/Graphics/gfx"
 	"github.com/Surreal/Systems/Input/input"
@@ -65,6 +74,7 @@ func main() {
 	}
 
 	gl.Enable(gl.DEBUG_OUTPUT)
+	gl.Enable(gl.DEPTH_TEST)
 	gl.DebugMessageCallback(glDebugCallback, nil)
 	gl.ClearColor(float32(0), float32(0), float32(0.1), float32(1))
 
@@ -74,36 +84,153 @@ func main() {
 	// TEST SQUARE
 	// Vertex Array
 	positions := []float32{
-		-0.5, 0.5, // Top Left
-		-0.5, -0.5, // Bottom Left
-		0.5, -0.5, // Bottom Right
-		0.5, 0.5, // Top Right
+		// Front Face
+		-1, 1, 1, // Top Left
+		-1, -1, 1, // Bottom Left
+		1, -1, 1, // Bottom Right
+		1, 1, 1, // Top Right
+
+		// Top Face
+		-1, 1, -1, // Top Left Back
+		-1, 1, 1, // Top Left Front
+		1, 1, 1, // Top Right Front
+		1, 1, -1, // Top Right Back
+
+		// Back Face
+		-1, 1, -1, // Top Left
+		-1, -1, -1, // Bottom Left
+		1, -1, -1, // Bottom Right
+		1, 1, -1, // Top Right
+
+		// Bottom Face
+		-1, -1, 1, // Bottom Left Front
+		-1, -1, -1, // Bottom Left Back
+		1, -1, -1, // Bottom Right Back
+		1, -1, 1, // Bottom Right Front
+
+		// Right Face
+		1, 1, 1, // Top Right Front
+		1, -1, 1, // Bottom Right Front
+		1, -1, -1, // Bottom Right Back
+		1, 1, -1, // Top Right Back
+
+		// Left Face
+		-1, 1, -1, // Top Left Back
+		-1, -1, -1, // Bottom Left Back
+		-1, -1, 1, // Bottom Left Front
+		-1, 1, 1, // Top Left Front
 	}
 
 	colors := []float32{
-		1.0, 1.0, 1.0, 1.0, // Top Left
-		1.0, 1.0, 1.0, 1.0, // Bottom Left
-		1.0, 1.0, 1.0, 1.0, // Bottom Right
-		1.0, 1.0, 1.0, 1.0, // Top Right
+		// Front Face
+		1.0, 1.0, 1.0, 1.0, // Top Left Front
+		1.0, 1.0, 1.0, 1.0, // Bottom Left Front
+		1.0, 1.0, 1.0, 1.0, // Bottom Right Front
+		1.0, 1.0, 1.0, 1.0, // Top Right Front
+
+		// Top Face
+		1.0, 1.0, 1.0, 1.0, // Top Left Back
+		1.0, 1.0, 1.0, 1.0, // Bottom Left Back
+		1.0, 1.0, 1.0, 1.0, // Bottom Right Back
+		1.0, 1.0, 1.0, 1.0, // Top Right Back
+
+		// Back Face
+		1.0, 1.0, 1.0, 1.0, // Top Left Front
+		1.0, 1.0, 1.0, 1.0, // Bottom Left Front
+		1.0, 1.0, 1.0, 1.0, // Bottom Right Front
+		1.0, 1.0, 1.0, 1.0, // Top Right Front
+
+		// Bottom Face
+		1.0, 1.0, 1.0, 1.0, // Top Left Back
+		1.0, 1.0, 1.0, 1.0, // Bottom Left Back
+		1.0, 1.0, 1.0, 1.0, // Bottom Right Back
+		1.0, 1.0, 1.0, 1.0, // Top Right Back
+
+		// Right Face
+		1.0, 1.0, 1.0, 1.0, // Top Left Front
+		1.0, 1.0, 1.0, 1.0, // Bottom Left Front
+		1.0, 1.0, 1.0, 1.0, // Bottom Right Front
+		1.0, 1.0, 1.0, 1.0, // Top Right Front
+
+		// Left Face
+		1.0, 1.0, 1.0, 1.0, // Top Left Back
+		1.0, 1.0, 1.0, 1.0, // Bottom Left Back
+		1.0, 1.0, 1.0, 1.0, // Bottom Right Back
+		1.0, 1.0, 1.0, 1.0, // Top Right Back
 	}
 
+	third := float32(1.0 / 3.0)
+	twoThirds := float32(2.0 / 3.0)
+	eps := float32(0.01)
 	textureCoords := []float32{
-		0.0, 0.0, // Top Left
-		0.0, 1.0, // Bottom Left
-		1.0, 1.0, // Bottom Right
-		1.0, 0.0, // Top Right
+		// Front Face
+		0.0, twoThirds + eps, // Top Left Front
+		0.0, 1.0, // Bottom Left Front
+		third - eps, 1.0, // Bottom Right Front
+		third - eps, twoThirds + eps, // Top Right Front
+
+		// Top Face
+		third + eps, twoThirds + eps, // Top Left Back
+		third + eps, 1.0, // Bottom Left Back
+		twoThirds - eps, 1.0, // Bottom Right Back
+		twoThirds - eps, twoThirds + eps, // Top Right Back
+
+		// Back Face
+		1.0, twoThirds + eps, // Top Left Back
+		1.0, 1.0, // Bottom Left Back
+		twoThirds + eps, 1.0, // Bottom Right Back
+		twoThirds + eps, twoThirds + eps, // Top Right Back
+
+		// Bottom Face
+		0.0, third + eps, // Top Left Back
+		0.0, twoThirds - eps, // Bottom Left Back
+		third - eps, twoThirds - eps, // Bottom Right Back
+		third - eps, third + eps, // Top Right Back
+
+		// Right Face
+		twoThirds + eps, third + eps, // Top Left Front
+		twoThirds + eps, twoThirds - eps, // Bottom Left Front
+		1.0, twoThirds - eps, // Bottom Right Front
+		1.0, third + eps, // Top Right Front
+
+		// Left Face
+		third + eps, third + eps, // Top Left Back
+		third + eps, twoThirds - eps, // Bottom Left Back
+		twoThirds - eps, twoThirds - eps, // Bottom Right Back
+		twoThirds - eps, third + eps, // Top Right Back
 	}
 
 	indicies := []uint32{
-		0, 1, 3,
-		3, 1, 2,
+		// Front Face
+		0, 3, 1,
+		1, 3, 2,
+
+		// Top Face
+		4, 7, 5,
+		5, 7, 6,
+
+		// Back Face
+		11, 8, 10,
+		10, 8, 9,
+
+		// Bottom Face
+		12, 15, 13,
+		13, 15, 14,
+
+		// Right Face
+		16, 19, 17,
+		17, 19, 18,
+
+		// Left Face
+		20, 23, 21,
+		21, 23, 22,
 	}
 
 	// Create vertex array
 	vertexArray := gfx.CreateVertexArray()
 
 	// Declare vertex attributes in order
-	vertexArray.PushVertexAttribute("position", gl.FLOAT, 2)
+	vertexArray.PushVertexAttribute("position", gl.FLOAT, 3)
 	vertexArray.PushVertexAttribute("color", gl.FLOAT, 4)
 	vertexArray.PushVertexAttribute("texCoords", gl.FLOAT, 2)
 
@@ -128,7 +255,7 @@ func main() {
 	}
 
 	// Create Texture
-	texture := gfx.CreateTexture(filepath.Join(util.DataRoot(), "Textures", "tiles.jpg"))
+	texture := gfx.CreateTexture(filepath.Join(util.DataRoot(), "Textures", "cube.jpg"))
 	texture.Load()
 
 	// Create Material
@@ -146,28 +273,34 @@ func main() {
 	scene := &core.Scene{}
 
 	// Create a SceneObject
-	so := core.CreateSceneObject(renderer)
-	scene.AddSceneObject(so)
+	square := core.CreateSceneObject(renderer)
+	scene.AddSceneObject(square)
+
+	// Create a camera
+	camera := core.CreateSceneObject(nil)
+	camComponent := gfx.CreateCameraComponent(75, gfx.Aspect16x9, gfx.PerspectiveProjection)
+	camComponent.Attach(camera)
+	camera.Transform.SetLocalPosition(math.Vector3f{X: 0, Y: 0, Z: 10})
 
 	for !window.ShouldClose() {
 		// Clear
-		gl.Clear(gl.COLOR_BUFFER_BIT)
+		gl.Clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT)
 
 		// Game play
-		newPos := so.Transform.LocalPosition()
+		newPos := square.Transform.LocalRotation()
 		if input.GetKey(input.KeyA) {
-			newPos.X -= 0.01
+			newPos.Y -= 0.5
 		}
 		if input.GetKey(input.KeyD) {
-			newPos.X += 0.01
+			newPos.Y += 0.5
 		}
 		if input.GetKey(input.KeyW) {
-			newPos.Y += 0.01
+			newPos.X += 0.5
 		}
 		if input.GetKey(input.KeyS) {
-			newPos.Y -= 0.01
+			newPos.X -= 0.5
 		}
-		so.Transform.SetLocalPosition(newPos)
+		square.Transform.SetLocalRotation(newPos)
 
 		scene.Render()
 

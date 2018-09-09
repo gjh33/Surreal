@@ -11,7 +11,9 @@ type SceneObject struct {
 func CreateSceneObject(renderer RenderableComponent) *SceneObject {
 	so := new(SceneObject)
 	CreateTransformComponent().Attach(so)
-	renderer.Attach(so)
+	if renderer != nil {
+		renderer.Attach(so)
+	}
 	return so
 }
 
@@ -27,6 +29,10 @@ func (so *SceneObject) RemoveComponent(component Component) {
 
 // Render implements the renderable interface
 func (so *SceneObject) Render() error {
+	if so.Renderer == nil {
+		return nil
+	}
+
 	err := so.Renderer.Render()
 	if err != nil {
 		return err

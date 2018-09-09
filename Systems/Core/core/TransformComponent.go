@@ -227,7 +227,7 @@ func (tc *TransformComponent) Model2WorldMatrix() *math.StandardMatrix {
 	var mat *math.StandardMatrix
 	// Recursion is overpowered and needs a nerf
 	if tc.Parent() != nil {
-		mat = tc.Model2OtherMatrix().MulM(tc.Parent().Model2WorldMatrix())
+		mat = tc.Parent().World2ModelMatrix().MulM(tc.Other2ModelMatrix())
 	} else {
 		mat = tc.Model2OtherMatrix()
 	}
@@ -247,7 +247,7 @@ func (tc *TransformComponent) World2ModelMatrix() *math.StandardMatrix {
 	var mat *math.StandardMatrix
 	// Recursion is overpowered and needs a nerf
 	if tc.Parent() != nil {
-		mat = tc.Parent().World2ModelMatrix().MulM(tc.Other2ModelMatrix())
+		mat = tc.Model2OtherMatrix().MulM(tc.Parent().Model2WorldMatrix())
 	} else {
 		mat = tc.Other2ModelMatrix()
 	}

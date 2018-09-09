@@ -24,8 +24,23 @@ func CreateMeshRendererComponent(model *Mesh, material *Material) *MeshRendererC
 
 // Render implements the Renderer interface allowing this object to draw itself to the screen
 func (mren *MeshRendererComponent) Render() error {
+	// Set the model matrix
+	// NOTE: Should this be here?
 	if mren.SceneObject() != nil {
 		err := mren.RenderMaterial.SetMaterialParameter("u_Model", mren.SceneObject().Transform.Model2WorldMatrix().ColMajorData())
+		if err != nil {
+			dbg.LogError(err.Error())
+		}
+	}
+
+	// Set the camera matrices
+	// NOTE: Should this be here?
+	if MainCamera != nil {
+		err := mren.RenderMaterial.SetMaterialParameter("u_View", MainCamera.ViewMatrix().ColMajorData())
+		if err != nil {
+			dbg.LogError(err.Error())
+		}
+		err = mren.RenderMaterial.SetMaterialParameter("u_Projection", MainCamera.ActiveProjectionMatrix.ColMajorData())
 		if err != nil {
 			dbg.LogError(err.Error())
 		}

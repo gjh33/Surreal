@@ -1,9 +1,5 @@
 package core
 
-import (
-	"github.com/Surreal/Debug/dbg"
-)
-
 // Component represents a component attached to a scene object
 type Component interface {
 	SceneObject() *SceneObject       // Should return the scene object this component is currently attached to
@@ -23,7 +19,6 @@ func (comp *BaseComponent) SceneObject() *SceneObject {
 
 // Attach implements the Component interface
 func (comp *BaseComponent) Attach(sceneObject *SceneObject) {
-	dbg.Log(comp)
 	if comp.sceneObject != nil {
 		comp.Detach()
 	}
