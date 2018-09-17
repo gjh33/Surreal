@@ -3,7 +3,6 @@ package gfx
 import (
 	"errors"
 	"image"
-	"image/draw"
 	"os"
 	"runtime"
 
@@ -166,10 +165,15 @@ func (tex *Texture) Load() error {
 
 	// Copy image into ram
 	rgba := image.NewRGBA(img.Bounds())
-	if rgba.Stride != rgba.Rect.Size().X*4 {
-		return errors.New("Invalid Texture File Format: Stride must be image width * 4")
+	for j := 0; j < img.Bounds().Dy(); j++ {
+		for i := 0; i < img.Bounds().Dx(); i++ {
+			rgba.Set(i, img.Bounds().Dy()-j, img.At(i, j))
+		}
 	}
-	draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
+	//if rgba.Stride != rgba.Rect.Size().X*4 {
+	//	return errors.New("Invalid Texture File Format: Stride must be image width * 4")
+	//}
+	//draw.Draw(rgba, rgba.Bounds(), img, image.Point{0, 0}, draw.Src)
 
 	// Send data to the GPU
 	tex.BindToSlot(gl.TEXTURE0)

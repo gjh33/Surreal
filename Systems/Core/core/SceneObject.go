@@ -29,17 +29,15 @@ func (so *SceneObject) RemoveComponent(component Component) {
 
 // Render implements the renderable interface
 func (so *SceneObject) Render() error {
-	if so.Renderer == nil {
-		return nil
-	}
-
-	err := so.Renderer.Render()
-	if err != nil {
-		return err
+	if so.Renderer != nil {
+		err := so.Renderer.Render()
+		if err != nil {
+			return err
+		}
 	}
 
 	for _, child := range so.Transform.Children() {
-		err = child.SceneObject().Render()
+		err := child.SceneObject().Render()
 		if err != nil {
 			return err
 		}

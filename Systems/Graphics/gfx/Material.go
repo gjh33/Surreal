@@ -8,6 +8,11 @@ import (
 
 // CurrentlyBoundMaterial is the material currently in use for rendering
 var CurrentlyBoundMaterial *Material
+var GlobalDefaultMaterial *Material
+
+func init() {
+
+}
 
 // Material represents an instance of a shader. Use this to associate shader parameter values to an object
 type Material struct {
